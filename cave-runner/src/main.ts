@@ -4,6 +4,8 @@ import { PoseEngine } from './pose-engine.js';
 import { runCalibration } from './calibration.js';
 import { setPoseEngine } from './pose-bridge';
 
+import allCharacters from './allCharacters';
+
 import RunningScene from './scenes/RunningScene';
 import MainMenuScene from './scenes/MainMenuScene';
 import CharacterSelectionScene from './scenes/CharacterSelectionScene';
@@ -45,6 +47,14 @@ let calibrated = false;
 let trackingPausedGame = false;
 let trackingOkSince = 0;
 let trackingListener: ((e: Event) => void) | null = null;
+
+const ASSET_PATH_VERSION = '1';
+
+function migrateStoredCharacters() {
+  if (localStorage.getItem('assetPathVersion') === ASSET_PATH_VERSION) return;
+  localStorage.setItem('allGameCharacters', JSON.stringify(allCharacters));
+  localStorage.setItem('assetPathVersion', ASSET_PATH_VERSION);
+}
 
 function showCalibrationScreen() {
   $('screen-calibrate')?.classList.add('active');
@@ -222,6 +232,7 @@ const render = () => {
 
 const main = async () => {
   hideTrackingLost();
+  migrateStoredCharacters();
   await runningScene.load();
   await mainMenuScene.load();
   await characterSelectionScene.load();

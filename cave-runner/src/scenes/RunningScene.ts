@@ -188,9 +188,9 @@ export default class RunningScene extends Scene {
     this.woodenCaveClone.position.z = this.woodenCave.position.z + this.caveSize;
     this.add(this.woodenCaveClone);
 
-    this.barrelObject = await this.fbxLoader.loadAsync('../../assets/models/barrel.fbx');
-    this.boxObject = await this.fbxLoader.loadAsync('../../assets/models/box.fbx');
-    this.spikeObject = await this.fbxLoader.loadAsync('../../assets/models/spike.fbx');
+    this.barrelObject = await this.fbxLoader.loadAsync('./assets/models/barrel.fbx');
+    this.boxObject = await this.fbxLoader.loadAsync('./assets/models/box.fbx');
+    this.spikeObject = await this.fbxLoader.loadAsync('./assets/models/spike.fbx');
     (document.querySelector('.loading-percentage') as HTMLInputElement).innerHTML = '10%';
     (document.querySelector('#loading-bar') as HTMLProgressElement).value = 10;
     this.createLeftJumpObstacle();
@@ -215,7 +215,7 @@ export default class RunningScene extends Scene {
 
     this.createRightSlideObstacle();
 
-    this.coinObject = await this.fbxLoader.loadAsync('../../assets/models/coin.fbx');
+    this.coinObject = await this.fbxLoader.loadAsync('./assets/models/coin.fbx');
     this.coinObject.rotation.set(90 * (Math.PI / 180), 0, 150 * (Math.PI / 180));
     (document.querySelector('.loading-percentage') as HTMLInputElement).innerHTML = '12%';
     (document.querySelector('#loading-bar') as HTMLProgressElement).value = 12;
