@@ -201,125 +201,12 @@ color: #BA4D31;
   display: none;
 }
 
-.auth-button{
-  position: absolute;
-  left: 0;
-  top: 0;
-  margin: 30px 10px;
-  display: none;
-}
-#sign-up-modal {
-  display: none;
-  padding-top: 20px;
-}
-#sign-in-modal {
-  display: none;
-}
-
-.form{
-  display: flex;
-  flex-direction: column;
-  padding: 5px;
-  text-align: center;
-}
-
-input{
-  padding: 8px;
-  margin-bottom: 5px;
-}
-.form p {
-  text-align: left;
-  margin: .5rem 0;
-  color: black;
-  font-weight: 500;
-}
-.close {
-text-align: right;
-cursor: pointer;
-font-weight: 700;
-}
-.close h2, .form h2{
-  margin: 0;
-}
-
-.form h2 {
-  margin-bottom: 10px;
-}
-
-#sign-out-button{
-  display: none;
-  position: absolute;
-  left: 0;
-  top: 0;
-  margin: 60px 20px;
-}
-#greetings {
-  position: absolute;
-  top: 0;
-  color: #F2E205;
-  left: 0;
-  margin: 20px;
-  display: none; 
-}
-
-
-#score-board-button{
-  margin: 150px 10px;
-  right: 0;
-  display: none;
-  position: absolute;
-  top: 0;
-}
-
-#high-scores-modal{
-  display: none;
-}
-
-#high-scores-modal{
-margin-top: 0;
-padding: 0;
-}
-
-#high-scores-modal h3{
-  text-align: center;
-  font-size: 1.5rem;
-  margin: 10px;
-}
-
-#rank-table {
-  border-collapse: collapse;
-  border: 1px solid #4e2828;
-  color: aliceblue;
-  margin: 0 auto;
-}
-.close-highscores-modal{
-  margin: 0;
-}
-th, td {
-  text-align: center;
-  padding: 10px 10px;
-}
-
-tr:nth-child(even) {
-  background-color: #4e2828
-}
-#country {
-  padding: 8px 0;
-}
 #about-modal{
   display: none;
   padding-top: 50px;
 }
 .about-content{
   text-align: center;
-}
-.auto-save-loader{
-  position: absolute;
-  color: white;
-  bottom: 0;
-  right: 0;
-  margin: 80px 50px;
-  display: none;
 }
 
 @media screen and (max-width: 480px) {
@@ -344,16 +231,136 @@ margin: 0.4rem 0;
 }
 }
 
-#username {
-  text-transform: capitalize;
+/* ---------- camera + calibration + tracking (MovePlay pattern) ---------- */
+#cam {
+  position: fixed;
+  width: 2px;
+  height: 2px;
+  opacity: 0;
+  pointer-events: none;
 }
 
-#backup-modal {
+.screen {
+  position: fixed;
+  inset: 0;
   display: none;
+  flex-direction: column;
+  z-index: 20;
 }
-.backup-content {
+
+.screen.active {
+  display: flex;
+}
+
+#screen-calibrate {
+  background: #000;
+}
+
+.cal-stage {
+  position: relative;
+  flex: 1;
+}
+
+#cal-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.cal-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: max(20px, env(safe-area-inset-top)) 20px max(28px, env(safe-area-inset-bottom));
+  pointer-events: none;
+}
+
+.cal-top {
   text-align: center;
 }
-#backup-modal .btn {
-  border-radius: 8px;
+
+.cal-instruction {
+  font-weight: 700;
+  font-size: clamp(17px, 5vw, 24px);
+  color: #fff;
+  text-shadow: 0 2px 16px rgba(0, 0, 0, 0.8);
+  margin: 0;
+}
+
+.cal-substep {
+  margin-top: 8px;
+  font-size: 14px;
+  color: #ccc;
+  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.8);
+}
+
+.cal-progress-wrap {
+  height: 6px;
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: 999px;
+  overflow: hidden;
+  max-width: 320px;
+  width: 100%;
+  margin: 0 auto;
+}
+
+.cal-progress {
+  height: 100%;
+  width: 0%;
+  background: #4ee1ff;
+  border-radius: 999px;
+  transition: width 0.1s linear;
+}
+
+.cal-countdown {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 900;
+  font-size: clamp(96px, 34vw, 200px);
+  color: #4ee1ff;
+  text-shadow: 0 0 64px rgba(78, 225, 255, 0.45);
+  background: rgba(10, 14, 28, 0.45);
+}
+
+.tracking-lost {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(10, 14, 28, 0.72);
+  backdrop-filter: blur(3px);
+  z-index: 15;
+  pointer-events: none;
+}
+
+.tracking-lost-card {
+  text-align: center;
+  color: #fff;
+}
+
+.tl-title {
+  font-weight: 700;
+  font-size: 24px;
+  margin: 0;
+}
+
+.tl-sub {
+  margin-top: 8px;
+  color: #ccc;
+  font-size: 15px;
+}
+
+.pose-error {
+  color: #ffb4a8;
+  font-size: 13px;
+  max-width: 280px;
+  margin: 8px auto 0;
+  text-align: center;
 }

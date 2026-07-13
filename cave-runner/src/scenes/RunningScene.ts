@@ -5,11 +5,14 @@ import {
 } from 'three';
 
 import { FBXLoader } from 'three/examples/jsm/loaders/FBXLoader';
-import Toastify from 'toastify-js';
 import TWEEN, { Tween } from '@tweenjs/tween.js';
 import allCharacters from '../allCharacters';
 
+import { poseEngine } from '../pose-bridge';
+
 import { IallGameCharacters } from '../types';
+
+type Lane = -1 | 0 | 1;
 
 export default class RunningScene extends Scene {
   private fbxLoader = new FBXLoader();
@@ -139,6 +142,29 @@ export default class RunningScene extends Scene {
   private stumbleAnimationsContainer: Object3D[] = [];
 
   private activePlayerIndex = 0;
+
+  private poseListenersBound = false;
+
+  private onPoseLane = (e: Event) => {
+    if (this.isGameOver || this.isGamePaused) return;
+    const { lane } = (e as CustomEvent<{ lane: Lane }>).detail;
+    this.goToLane(lane);
+  };
+
+  private onPoseJump = () => {
+    if (this.isGameOver || this.isGamePaused) return;
+    this.jump();
+  };
+
+  private onPoseSquat = (e: Event) => {
+    if (this.isGameOver || this.isGamePaused) return;
+    const { active } = (e as CustomEvent<{ active: boolean }>).detail;
+    if (active) {
+      this.slide(true);
+    } else {
+      this.releaseSlide();
+    }
+  };
 
   async load() {
     const ambient = new AmbientLight(0xFFFFFF, 2.5);
@@ -406,6 +432,9 @@ export default class RunningScene extends Scene {
     (document.getElementById('restart-button') as HTMLInputElement).onclick = () => {
       this.restartGame();
     };
+
+    this.bindPoseListeners();
+
     setTimeout(() => {
       this.isPlayerHeadStart = true;
     }, 3000);
@@ -460,7 +489,23 @@ export default class RunningScene extends Scene {
     }
   }
 
+  /** External pause control (e.g. tracking-lost) — does not toggle the manual pause modal. */
+  setPaused(paused: boolean) {
+    if (this.isGameOver) return;
+    if (paused) {
+      if (!this.isGamePaused) {
+        this.clock.stop();
+        this.isGamePaused = true;
+      }
+    } else if (this.isGamePaused) {
+      this.clock.start();
+      this.isGamePaused = false;
+    }
+  }
+
   hide() {
+    this.unbindPoseListeners();
+
     (document.querySelector('.disable-touch') as HTMLInputElement).style.display = 'none';
 
     this.isGameOver = false;
@@ -556,6 +601,50 @@ export default class RunningScene extends Scene {
     }
   }
 
+  private bindPoseListeners() {
+    if (!poseEngine || this.poseListenersBound) return;
+    poseEngine.addEventListener('lane', this.onPoseLane);
+    poseEngine.addEventListener('jump', this.onPoseJump);
+    poseEngine.addEventListener('squat', this.onPoseSquat);
+    this.poseListenersBound = true;
+  }
+
+  private unbindPoseListeners() {
+    if (!poseEngine || !this.poseListenersBound) return;
+    poseEngine.removeEventListener('lane', this.onPoseLane);
+    poseEngine.removeEventListener('jump', this.onPoseJump);
+    poseEngine.removeEventListener('squat', this.onPoseSquat);
+    this.poseListenersBound = false;
+  }
+
+  private goToLane(targetLane: Lane) {
+    const targetX = targetLane * 18;
+    if (this.player.position.x === targetX) return;
+
+    const movingLeft = targetX < this.player.position.x;
+    if (movingLeft) {
+      this.player.rotation.y = -140 * (Math.PI / 180);
+    } else {
+      this.player.rotation.y = 140 * (Math.PI / 180);
+    }
+
+    new TWEEN.Tween(this.player.position)
+      .to({ x: targetX }, 200)
+      .easing(TWEEN.Easing.Quadratic.Out)
+      .onUpdate(() => {
+        if (movingLeft && this.player.position.x <= targetX) {
+          this.player.position.x = targetX;
+        }
+        if (!movingLeft && this.player.position.x >= targetX) {
+          this.player.position.x = targetX;
+        }
+      })
+      .onComplete(() => {
+        this.player.rotation.y = 180 * (Math.PI / 180);
+      })
+      .start();
+  }
+
   private moveLeft() {
     if (this.player.position.x !== -18) {
       const tweenLeft = new TWEEN.Tween(this.player.position)
@@ -623,7 +712,13 @@ export default class RunningScene extends Scene {
     }
   }
 
-  private slide() {
+  private endSlide() {
+    clearTimeout(this.sliderTimeout);
+    this.player.position.y = -35;
+    this.isSliding = false;
+  }
+
+  private slide(hold = false) {
     if (!this.isSliding) {
       if (this.isJumping) {
         this.jumpingUp.stop();
@@ -640,10 +735,17 @@ export default class RunningScene extends Scene {
       this.slidingAnimation.play();
       this.slidingAnimation.crossFadeTo(this.runningAnimation, 1.9, false).play();
       this.currentAnimation = this.runningAnimation;
-      this.sliderTimeout = setTimeout(() => {
-        this.player.position.y = -35;
-        this.isSliding = false;
-      }, 800);
+      if (!hold) {
+        this.sliderTimeout = setTimeout(() => this.endSlide(), 800);
+      }
+    } else if (hold) {
+      clearTimeout(this.sliderTimeout);
+    }
+  }
+
+  private releaseSlide() {
+    if (this.isSliding) {
+      this.endSlide();
     }
   }
 
@@ -737,66 +839,17 @@ export default class RunningScene extends Scene {
     this.saveHighScore();
   }
 
-  private async saveHighScore() {
+  private saveHighScore() {
     const highScore = localStorage.getItem('high-score') || 0;
     if (Number(this.scores) > Number(highScore)) {
       localStorage.setItem('high-score', this.scores.toString());
-      const token = localStorage.getItem('token');
-      if (token) {
-        try {
-          (document.querySelector('.auto-save-loader') as HTMLInputElement).style.display = 'block';
-          const response = await fetch('/.netlify/functions/save-highscore', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              authorization: token,
-            },
-            body: JSON.stringify({ scores: this.scores }),
-          });
-          (document.querySelector('.auto-save-loader') as HTMLInputElement).style.display = 'none';
-          if (response.status === 401) {
-            localStorage.removeItem('token');
-          }
-        } catch (error) {
-          (document.querySelector('.auto-save-loader') as HTMLInputElement).style.display = 'none';
-        }
-      }
     }
   }
 
-  private async saveCoins() {
+  private saveCoins() {
     const prevTotalCoins = localStorage.getItem('total-coins') || 0;
     const totalCoins = Number(prevTotalCoins) + this.coins;
     localStorage.setItem('total-coins', totalCoins.toString());
-
-    const token = localStorage.getItem('token');
-    if (token) {
-      (document.querySelector('.auto-save-loader') as HTMLInputElement).style.display = 'block';
-      try {
-        const response = await fetch('/.netlify/functions/save-coins', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            authorization: token,
-          },
-          body: JSON.stringify({ coins: totalCoins }),
-        });
-        (document.querySelector('.auto-save-loader') as HTMLInputElement).style.display = 'none';
-        if (response.status === 401) {
-          Toastify({
-            text: 'Your session has expired. Please relogin',
-            duration: 5000,
-            close: true,
-            gravity: 'bottom',
-            position: 'center',
-            stopOnFocus: true,
-          }).showToast();
-          localStorage.removeItem('token');
-        }
-      } catch (error) {
-        (document.querySelector('.auto-save-loader') as HTMLInputElement).style.display = 'none';
-      }
-    }
   }
 
   /*
