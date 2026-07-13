@@ -182,6 +182,20 @@ html, body {
   text-align: center;
   font-size: 11px;
   color: rgba(142, 160, 201, 0.55);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  align-items: center;
+}
+
+.home-foot-link {
+  color: rgba(78, 225, 255, 0.85);
+  text-decoration: none;
+  font-size: 12px;
+}
+
+.home-foot-link:hover {
+  text-decoration: underline;
 }
 
 /* ============================================================

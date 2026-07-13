@@ -1,0 +1,41 @@
+name: Deploy Cave Runner to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'cave-runner/**'
+      - '.github/workflows/deploy-cave-runner.yml'
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: npm
+          cache-dependency-path: cave-runner/package-lock.json
+
+      - name: Install and build
+        working-directory: cave-runner
+        run: |
+          npm ci
+          npm run build
+
+      - name: Copy build to docs/cave-runner
+        run: |
+          rm -rf docs/cave-runner
+          mkdir -p docs/cave-runner
+          cp -r cave-runner/dist/. docs/cave-runner/
+
+      - name: Commit and push if changed
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: 'Deploy Cave Runner build to docs/cave-runner'
+          file_pattern: 'docs/cave-runner/**'

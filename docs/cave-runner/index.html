@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <link rel="icon" type="image/svg+xml" href="/MovePlay/cave-runner/assets/favicon.63a26457.svg" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
+  <link rel="stylesheet" href="https://use.typekit.net/cxj8zhk.css">
+  <title>Cave Runner</title>
+  <script type="module" crossorigin src="/MovePlay/cave-runner/assets/index.f78fb1f0.js"></script>
+  <link rel="stylesheet" href="/MovePlay/cave-runner/assets/index.b874d725.css">
+</head>
+
+<body>
+  <!-- Hidden camera feed — MediaPipe reads this; never use display:none -->
+  <video id="cam" autoplay muted playsinline></video>
+
+  <!-- Calibration overlay (shown before first run when camera is available) -->
+  <section id="screen-calibrate" class="screen">
+    <div class="cal-stage">
+      <canvas id="cal-canvas"></canvas>
+      <div class="cal-overlay">
+        <div class="cal-top">
+          <p id="cal-instruction" class="cal-instruction">Prop your phone up and step back</p>
+          <p id="cal-substep" class="cal-substep">Your whole body — head to feet — should be in frame</p>
+        </div>
+        <div class="cal-progress-wrap">
+          <div id="cal-progress" class="cal-progress"></div>
+        </div>
+      </div>
+      <div id="cal-countdown" class="cal-countdown" hidden></div>
+    </div>
+  </section>
+
+  <div id="tracking-lost" class="tracking-lost" hidden>
+    <div class="tracking-lost-card">
+      <p class="tl-title">Can't see you!</p>
+      <p class="tl-sub">Step back into frame to keep running</p>
+    </div>
+  </div>
+
+  <div class="coins-container">
+    <h3>Coins: <span class="coins-count">0</span></h3>
+  </div>
+  <div class="scores-container">
+    <h3>Scores: <span class="scores-count">0</span></h3>
+  </div>
+
+  <div class="pause-button">
+    <button class="btn-icon-only">
+      <span class="btn-icon"><i class="fa-solid fa-pause"></i></span>
+    </button>
+  </div>
+
+  <div id="game-paused-modal" class="modal">
+    <div class="modal-body" id="">
+      <br />
+      <h1>Game Paused!</h1>
+      <br />
+      <button class="btn" id="resume-button">
+        <span class="btn-icon"><i class="fa-solid fa-refresh"></i></span>
+        Resume</button><br />
+      <button class="btn" id="quit-button">
+        <span class="btn-icon"><i class="fa-solid fa-times"></i></span>
+        Quit Game</button><br />
+    </div>
+  </div>
+
+  <div id="game-over-modal" class="modal">
+    <div class="modal-body" id="game-over-modal">
+      <h1>Game Over</h1>
+      <p>Your Scores:<span id="current-score"></span></p>
+      <p>Coins:<span id="current-coins"></span></p>
+      <button class="btn" id="restart-button">
+        <span class="btn-icon"><i class="fa-solid fa-refresh"></i></span>
+        Restart
+      </button>
+      <button class="btn" id="game-over-quit-button">
+        <span class="btn-icon"><i class="fa-solid fa-times"></i></span>
+        Quit Game
+      </button>
+    </div>
+  </div>
+
+  <!-- Main menu buttons  -->
+  <section id="main-menu-buttons">
+    <button id="play-game-button" class="btn">
+      <span class="btn-icon"><i class="fa-solid fa-play"></i></span> Play
+    </button>
+    <p id="pose-error" class="pose-error" hidden></p>
+    <button class="btn" id="Characters-selection-button">
+      <span class="btn-icon"><i class="fa-solid fa-users"></i></span> Characters
+    </button>
+    <button class="btn" id="about-button">
+      <span class="btn-icon"><i class="fa-solid fa-info"></i></span> About
+    </button>
+  </section>
+
+  <!--Character Selection Section -->
+  <div class="home-menu">
+    <button class="btn-icon-only">
+      <span class="btn-icon"><i class="fa-solid fa-home"></i></span>
+    </button>
+  </div>
+  <div id="character-selection-container">
+    <h1 class="character-name">Character Name</h1>
+    <section class="character-selection-buttons">
+      <button class="btn" id="prev-btn">
+        <span class="btn-icon"><i class="fa-solid fa-angles-left"></i></span>
+        Prev
+      </button>
+      <div>
+        <button class="btn" id="select-character-btn">
+          <span class="btn-icon"><i class="fa-solid fa-check"></i></span>
+          <span id="select-button-text">Select</span>
+        </button>
+        <button class="btn" id="character-price-button">
+          <span class="btn-icon"> <i class="fa-solid fa-coins"></i> </span> <span id="character-price-text">
+            10,000</span>
+        </button>
+      </div>
+      <button class="btn-two" id="next-btn">
+        Next <span class="btn-icon"><i class="fa-solid fa-angles-right"></i></span>
+      </button>
+    </section>
+  </div>
+
+  <!-- Coins and Highscores section -->
+  <div class="high-score-container">
+    <h3>High Score: <span class="high-score">0</span> </h3>
+  </div>
+  <div class="total-coins-container">
+    <h3> Total Coins: <span class="total-coins">0</span></h3>
+  </div>
+
+  <!-- About game modal -->
+  <div id="about-modal" class="modal">
+    <div class="modal-body">
+      <div class="about-content">
+        <h2>About Cave Runner</h2>
+        <p>Cave Runner is a 3D endless runner game built with Three.js and Vite.</p>
+        <p>Originally created by <a href="https://github.com/tope-olajide/cave-runner">tope-olajide</a>, adapted for MovePlay.</p>
+        <button class="btn" id="close-about-btn">
+          <span class="btn-icon"><i class="fa-solid fa-times"></i></span>
+          Close
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Loading game container -->
+  <div class="loading-container">
+    <label class="loading-text" for="loading-bar">loading</label>
+    <span class="loading-percentage">0%</span>
+    <progress id="loading-bar" value="0" max="100"> </progress>
+  </div>
+  <div class="disable-touch"></div>
+
+  <!-- Game's canvas -->
+  <canvas id="app"> </canvas>
+
+  
+
+</body>
+
+</html>

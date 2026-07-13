@@ -26,6 +26,14 @@ npm run dev
 
 Open the URL Vite prints (typically `http://localhost:3000` or `http://127.0.0.1:5173`). No environment variables or backend setup required.
 
+## GitHub Pages
+
+Built output is published to `docs/cave-runner/` and served at:
+
+**https://moshiyoshicodes.github.io/MovePlay/cave-runner/**
+
+Pushes to `main` that change `cave-runner/` trigger a GitHub Actions workflow that rebuilds and updates `docs/cave-runner/`.
+
 ## License
 
 Distributed under the MIT License. See `LICENSE` for details.
