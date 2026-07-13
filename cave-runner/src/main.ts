@@ -78,7 +78,7 @@ function bindTrackingListener() {
   if (!engine || trackingListener) return;
 
   trackingListener = (e: Event) => {
-    if (currentScene !== runningScene) return;
+    if (currentScene !== runningScene || !engine) return;
 
     const { ok } = (e as CustomEvent<{ ok: boolean }>).detail;
 
@@ -221,6 +221,7 @@ const render = () => {
 };
 
 const main = async () => {
+  hideTrackingLost();
   await runningScene.load();
   await mainMenuScene.load();
   await characterSelectionScene.load();

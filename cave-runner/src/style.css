@@ -340,6 +340,10 @@ margin: 0.4rem 0;
   pointer-events: none;
 }
 
+.tracking-lost[hidden] {
+  display: none !important;
+}
+
 .tracking-lost-card {
   text-align: center;
   color: #fff;
