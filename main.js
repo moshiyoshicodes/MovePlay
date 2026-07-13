@@ -167,9 +167,14 @@ function startGame() {
 function endGame({ score, coins, distance }) {
   cleanupGame();
 
-  const best = Number(localStorage.getItem("bhaag_best") || 0);
+  // migrate score saved under the old key (BHAAG → MovePlay rebrand)
+  const legacy = localStorage.getItem("bhaag_best");
+  if (legacy !== null && localStorage.getItem("moveplay_best") === null) {
+    localStorage.setItem("moveplay_best", legacy);
+  }
+  const best = Number(localStorage.getItem("moveplay_best") || 0);
   const isBest = score > best;
-  if (isBest) localStorage.setItem("bhaag_best", String(score));
+  if (isBest) localStorage.setItem("moveplay_best", String(score));
 
   $("over-score").textContent = score.toLocaleString("en-IN");
   $("over-coins").textContent = coins;
@@ -201,10 +206,10 @@ $("btn-home").addEventListener("click", () => {
 
 $("btn-share").addEventListener("click", async () => {
   const score = $("over-score").textContent;
-  const text = `I scored ${score} in BHAAG — a game you play with your body, no controller. Beat me:`;
+  const text = `I scored ${score} in MovePlay (Bhaag) — a game you play with your body, no controller needed. Beat me:`;
   const url = location.href;
   if (navigator.share) {
-    try { await navigator.share({ title: "BHAAG", text, url }); } catch (_) {}
+    try { await navigator.share({ title: "MovePlay", text, url }); } catch (_) {}
   } else {
     try {
       await navigator.clipboard.writeText(`${text} ${url}`);

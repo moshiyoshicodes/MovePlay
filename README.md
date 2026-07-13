@@ -1,135 +1,68 @@
-/* ============================================================
-   calibration.js — the Kinect moment.
-   Shows the mirrored camera with a glowing skeleton, guides the
-   player into frame, waits for 1.5s of stillness, captures the
-   standing baseline, counts down, resolves.
-   ============================================================ */
+# MovePlay
 
-import { drawSkeleton } from "./pose-engine.js";
+Your phone's camera is the controller. No app install, no hardware — just a browser link.
 
-const HOLD_MS = 1500;      // stillness required to lock baseline
-const STILL_EPS = 0.012;   // max hip movement (normalised) to count as still
+MovePlay is a motion-sensing game platform that uses MediaPipe pose tracking to turn physical movement (lean, jump, squat) into game input. Point your phone at yourself, prop it up, and play with your body. Optionally cast to a TV for the full experience.
 
-export function runCalibration(engine, video) {
-  const canvas = document.getElementById("cal-canvas");
-  const ctx = canvas.getContext("2d");
-  const instruction = document.getElementById("cal-instruction");
-  const substep = document.getElementById("cal-substep");
-  const progress = document.getElementById("cal-progress");
-  const countdownEl = document.getElementById("cal-countdown");
+**Game #1 — Bhaag** · three-lane endless runner. Lean to switch lanes, jump to clear hurdles, squat to slide under bars.
 
-  let holdStart = null;
-  let hipHistory = [];
-  let raf = null;
-  let done = false;
+---
 
-  function setStep(main, sub) {
-    if (instruction.textContent !== main) instruction.textContent = main;
-    if (substep.textContent !== sub) substep.textContent = sub;
-  }
+## Running locally
 
-  function resize() {
-    const dpr = Math.min(window.devicePixelRatio || 1, 2);
-    canvas.width = canvas.clientWidth * dpr;
-    canvas.height = canvas.clientHeight * dpr;
-  }
-  resize();
-  window.addEventListener("resize", resize);
+Requires HTTPS or localhost (browsers block camera on plain HTTP).
 
-  return new Promise((resolve) => {
-    function frame() {
-      if (done) return;
-      raf = requestAnimationFrame(frame);
+```bash
+npx serve .
+```
 
-      const w = canvas.width, h = canvas.height;
-      ctx.clearRect(0, 0, w, h);
+Then open `http://localhost:3000` in Chrome or Safari.
 
-      // mirrored camera feed, cover-fit
-      if (video.readyState >= 2) {
-        const vw = video.videoWidth, vh = video.videoHeight;
-        const scale = Math.max(w / vw, h / vh);
-        const dw = vw * scale, dh = vh * scale;
-        ctx.save();
-        ctx.translate(w, 0);
-        ctx.scale(-1, 1);
-        ctx.filter = "brightness(0.65) saturate(0.85)";
-        ctx.drawImage(video, (w - dw) / 2, (h - dh) / 2, dw, dh);
-        ctx.restore();
-        ctx.filter = "none";
-      }
+To test on a phone from the same Wi-Fi network:
 
-      // silhouette guide zone (centre column)
-      ctx.save();
-      ctx.strokeStyle = "rgba(78,225,255,0.35)";
-      ctx.setLineDash([10, 10]);
-      ctx.lineWidth = 2;
-      const zx = w * 0.22, zw = w * 0.56, zy = h * 0.08, zh = h * 0.86;
-      ctx.beginPath();
-      if (ctx.roundRect) ctx.roundRect(zx, zy, zw, zh, 24);
-      else ctx.rect(zx, zy, zw, zh);
-      ctx.stroke();
-      ctx.restore();
+```bash
+npx serve . --listen 0.0.0.0
+```
 
-      // skeleton overlay (landmarks are already mirrored by the engine)
-      drawSkeleton(ctx, engine.smoothed, w, h);
+Open the LAN address shown in the terminal on your phone (e.g. `http://192.168.x.x:3000`). Note: camera will only work on `localhost` — for phone testing use `npx serve` with `--ssl` or deploy to GitHub Pages.
 
-      // ---- state machine ----
-      if (!engine.tracking) {
-        setStep("Step back so I can see you", "Prop the phone at waist height, 6–8 feet away");
-        resetHold();
-      } else if (!engine.fullBodyVisible()) {
-        setStep("Almost — show your whole body", "Head to feet should fit in the frame");
-        resetHold();
-      } else {
-        // stillness check on hips
-        const hip = engine.metrics?.hipMid;
-        if (hip) {
-          hipHistory.push({ ...hip, t: performance.now() });
-          hipHistory = hipHistory.filter((p) => performance.now() - p.t < 400);
-          const still = hipHistory.every(
-            (p) =>
-              Math.abs(p.x - hip.x) < STILL_EPS &&
-              Math.abs(p.y - hip.y) < STILL_EPS
-          );
+---
 
-          if (still) {
-            if (!holdStart) holdStart = performance.now();
-            const pct = Math.min(1, (performance.now() - holdStart) / HOLD_MS);
-            progress.style.width = `${pct * 100}%`;
-            setStep("Perfect — hold still", "Locking in your standing pose…");
-            if (pct >= 1) {
-              engine.captureBaseline();
-              finish();
-              return;
-            }
-          } else {
-            setStep("Stand relaxed, feet under shoulders", "Hold still for a moment");
-            resetHold();
-          }
-        }
-      }
-    }
+## Deploying to GitHub Pages
 
-    function resetHold() {
-      holdStart = null;
-      progress.style.width = "0%";
-    }
+Push the repo root as-is to `gh-pages` (or configure Pages to serve from `main`). No build step needed — everything is plain ES modules and static files.
 
-    async function finish() {
-      done = true;
-      cancelAnimationFrame(raf);
-      window.removeEventListener("resize", resize);
-      countdownEl.hidden = false;
-      for (const n of ["3", "2", "1"]) {
-        countdownEl.textContent = n;
-        await sleep(700);
-      }
-      countdownEl.hidden = true;
-      resolve();
-    }
+---
 
-    frame();
-  });
-}
+## Architecture
 
-const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+```
+index.html          single-page shell, four screens
+style.css           midnight-arcade design system (CSS variables at top)
+main.js             screen state machine: home → calibrate → game → over
+pose-engine.js      MediaPipe wrapper — the platform layer (don't modify)
+calibration.js      guided standing-pose calibration
+game.js             game #1: Bhaag endless runner
+```
+
+`pose-engine.js` is the console; games are cartridges. Games listen to events (`lane`, `jump`, `squat`, `tracking`, `pose`) and never touch MediaPipe directly.
+
+---
+
+## Browser support
+
+| Browser | Status |
+|---------|--------|
+| Chrome Android | ✅ |
+| Safari iOS 16+ | ✅ |
+| Chrome desktop | ✅ |
+| Firefox | ⚠️ GPU delegate may fall back to CPU |
+
+---
+
+## Constraints
+
+- No build step, no bundler, no npm dependencies
+- No backend — `localStorage` only (`moveplay_best`)
+- `<video id="cam">` must stay in the DOM and rendered (never `display:none`) — MediaPipe requires it
+- Gesture thresholds in `pose-engine.js` (`TUNE` object) are hand-tuned — don't change them without gameplay testing
