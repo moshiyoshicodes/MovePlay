@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="theme-color" content="#0A0E1C" />
+  <title>BHAAG — your body is the controller</title>
+  <meta name="description" content="Turn your phone into a motion-sensing game console. No app, no controller — just your camera and your body." />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='80' font-size='80'>🏃</text></svg>" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=Unbounded:wght@700;900&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+
+  <!-- Shared camera feed (hidden video element MediaPipe reads from) -->
+  <video id="cam" autoplay muted playsinline></video>
+
+  <!-- ============ SCREEN: HOME ============ -->
+  <section id="screen-home" class="screen active">
+    <div class="home-inner">
+      <p class="eyebrow">no app · no controller · just you</p>
+      <h1 class="wordmark">BHAAG<span class="wordmark-dot">!</span></h1>
+      <p class="tagline">Your body is the controller. Prop your phone up, step back, and run.</p>
+
+      <div class="gesture-row" aria-hidden="true">
+        <div class="gesture">
+          <svg viewBox="0 0 48 48"><g class="glyph"><circle cx="18" cy="10" r="5"/><path d="M18 15 L14 30 M14 30 L10 42 M14 30 L22 40 M18 18 L8 26 M18 18 L28 24"/></g></svg>
+          <span>Lean<br/>= switch lane</span>
+        </div>
+        <div class="gesture">
+          <svg viewBox="0 0 48 48"><g class="glyph"><circle cx="24" cy="8" r="5"/><path d="M24 13 L24 26 M24 26 L16 38 M24 26 L32 38 M24 16 L12 8 M24 16 L36 8"/></g></svg>
+          <span>Jump<br/>= jump</span>
+        </div>
+        <div class="gesture">
+          <svg viewBox="0 0 48 48"><g class="glyph"><circle cx="24" cy="16" r="5"/><path d="M24 21 L24 30 M24 30 L14 36 M24 30 L34 36 M24 23 L12 28 M24 23 L36 28"/></g></svg>
+          <span>Squat<br/>= slide under</span>
+        </div>
+      </div>
+
+      <button id="btn-start" class="btn-primary">Start camera</button>
+      <p class="hint">Playing on a TV? Cast or mirror your phone's screen first, then hit start.</p>
+      <p id="home-error" class="error" hidden></p>
+    </div>
+    <footer class="home-foot">
+      <span>v0.1 · runs fully on your device — video never leaves your phone</span>
+    </footer>
+  </section>
+
+  <!-- ============ SCREEN: CALIBRATION ============ -->
+  <section id="screen-calibrate" class="screen">
+    <div class="cal-stage">
+      <canvas id="cal-canvas"></canvas>
+      <div class="cal-overlay">
+        <div class="cal-top">
+          <p id="cal-instruction" class="cal-instruction">Prop your phone up and step back</p>
+          <p id="cal-substep" class="cal-substep">Your whole body — head to feet — should be in frame</p>
+        </div>
+        <div class="cal-progress-wrap">
+          <div id="cal-progress" class="cal-progress"></div>
+        </div>
+      </div>
+      <div id="cal-countdown" class="cal-countdown" hidden></div>
+    </div>
+  </section>
+
+  <!-- ============ SCREEN: GAME ============ -->
+  <section id="screen-game" class="screen">
+    <canvas id="game-canvas"></canvas>
+
+    <div class="hud">
+      <div class="hud-score">
+        <span class="hud-label">score</span>
+        <span id="hud-score">0</span>
+      </div>
+      <div class="hud-coins">
+        <span class="coin-dot"></span>
+        <span id="hud-coins">0</span>
+      </div>
+    </div>
+
+    <!-- live skeleton pip, like a Kinect -->
+    <canvas id="pip-canvas" class="pip"></canvas>
+
+    <!-- stance bar: live lean position mapped to lanes -->
+    <div class="stance-bar" aria-hidden="true">
+      <div class="stance-lane" data-lane="-1"></div>
+      <div class="stance-lane" data-lane="0"></div>
+      <div class="stance-lane" data-lane="1"></div>
+      <div id="stance-marker" class="stance-marker"></div>
+    </div>
+
+    <div id="tracking-lost" class="tracking-lost" hidden>
+      <div class="tracking-lost-card">
+        <p class="tl-title">Can't see you!</p>
+        <p class="tl-sub">Step back into frame to keep running</p>
+      </div>
+    </div>
+
+    <div id="go-flash" class="go-flash" hidden>GO!</div>
+  </section>
+
+  <!-- ============ SCREEN: GAME OVER ============ -->
+  <section id="screen-over" class="screen">
+    <div class="over-inner">
+      <p class="eyebrow">run over</p>
+      <p class="over-score-label">score</p>
+      <h2 id="over-score" class="over-score">0</h2>
+      <div class="over-stats">
+        <div><span id="over-coins">0</span><label>coins</label></div>
+        <div><span id="over-dist">0m</span><label>distance</label></div>
+        <div><span id="over-best">0</span><label>best</label></div>
+      </div>
+      <p id="new-best" class="new-best" hidden>new personal best 🔥</p>
+      <button id="btn-again" class="btn-primary">Run again</button>
+      <button id="btn-share" class="btn-ghost">Challenge a friend</button>
+      <button id="btn-home" class="btn-ghost subtle">Back to start</button>
+    </div>
+  </section>
+
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>
